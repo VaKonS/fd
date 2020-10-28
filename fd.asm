@@ -1,7 +1,7 @@
 ; fasm 16-bit COM program
 	org     100h                    ; code starts at offset 100h
 	use16                           ; use 16-bit code
-include 'only8086.inc'
+;include 'only8086.inc'
 ; ^^^ uncomment this line to check for 8086 compatibility
 ; with only8086.inc macros from
 ; https://board.flatassembler.net/topic.php?t=6667#53151
@@ -124,12 +124,12 @@ sfl:	or	bh, bh
 	mov	[si], bl
 s1:	mov	ah, 4eh
 	int	21h
-	sbb	ax, ax		;-1 if not found
+	salc			;al = -1 if not found
 	or	bh, bh
 	jns	s2
 	mov	ah, 4Ch		;in check mode, return 0 or FF (not exist)
 	int	21h
-s2:	or	ax, ax
+s2:	or	al, al
 	js	nf		;not found
 	xchg	ax, bx		;al = found letter
 	jmp	setltr
@@ -175,7 +175,7 @@ l2:	lodsb
 	inc	si
 l3:	dec	si
 fl:	pop	cx
-	mov	ax, si
+	xchg	ax, si
 	pop	si
 	sub	ax, bx
 	pop	bx
@@ -197,10 +197,3 @@ mst	db 'Drive is '
 dltr	db 'A:.',13,10,36
 align 128
 dta:
-
-
-
-
-
-
-
