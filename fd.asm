@@ -64,14 +64,14 @@ cmpn:	 lodsb
 	 cmp	al, ah
 	loope	cmpn		;dec cx, j...
 	pop	si
-	je	mesn
-nomtch:	dec	di		;es:di is after matched part
-nmtch2:	mov	al, 0		;(dec di is for broken case 'matched_part',0,di)
+	je	mtchp
+	dec	di		;for broken case 'matched_part', 0, di after 0
+nomtch:	mov	al, 0		;es:di is after matched part
 	or	cx, -1
 	repne	scasb		;searching 0
 	jmp	chkn		;es:di is after stringz
-mesn:	cmp	byte[es:di], '=' ;part of name matched, is es:di on '='?
-	jne	nmtch2		;even in broken case di is on 0
+mtchp:	cmp	byte[es:di], '=' ;part of name matched, is [es:di] = '='?
+	jne	nomtch		;even in broken case di is on 0
 
 	inc	di		;found string, es:di is after '='
 	sub	dx, bx
@@ -125,6 +125,7 @@ sfl:	or	bh, bh
 s1:	mov	ah, 4eh
 	int	21h
 	salc			;al = -1 if not found
+	;sbb	al, al
 	or	bh, bh
 	jns	s2
 	mov	ah, 4Ch		;in check mode, return 0 or FF (not exist)
