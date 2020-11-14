@@ -23,12 +23,10 @@ havel:	lodsb
 	cmp	al, '*'
 	jne	sm		;search mode
 
-	dec	cx		;check mode, ds:si = {:|+}filename
-	jz	h
+	sub	cx, 2		;check mode, ds:si = {:|+}filename
+	jbe	h		;name is absent
 	mov	dh, -1		;check mode flag (a...z in search mode)
 	lodsb
-	dec	cx
-	jz	h
 	cmp	al, ':'
 	sbb	bp, bp
 	jmp	en		;ds:si = exact name
@@ -62,6 +60,7 @@ cmpn:	 lodsb
 	 inc	di
 	 or	ax, 'AA' xor 'aa'
 	 cmp	al, ah
+	jmp	short $+2	;see line 147
 	loope	cmpn		;dec cx, j...
 	pop	si
 	je	mtchp
@@ -81,6 +80,7 @@ skpsp:	lodsb
 	cmp	al, ' '
 	jg	ffn
 	cmp	al, 13
+	jmp	short $+2	;see line 147
 	loopne	skpsp
 	jmp	curdr		;only var_name => current disk
 
@@ -101,6 +101,7 @@ curp:	dec	si		;ds:si = *:[\]filename
 en:	mov	bx, si
 nl:	inc	bx
 	cmp	byte[bx], 13
+	jmp	short $+2	;see line 147
 	loopne	nl
 	mov	byte[bx], 0	;zero terminate filename
 
@@ -126,7 +127,33 @@ s1:	mov	ah, 4eh
 	int	21h
 	salc			;al = -1 if not found
 	;sbb	al, al
-	or	bh, bh
+
+	;al = 00 can be returned for unmatching label, therefore
+	;        additional check is needed
+	cmp	cx, 8
+	jne	nal
+	push	si
+	push	di
+	add	si, 3		;searched label name
+	mov	di, dta + 1Eh	;found name
+	mov	cl, 12		;8.3
+c:	lodsb
+	mov	ah, [di]
+	inc	di
+	or	ax, ax
+	jz	cm		;0 byte, strings matched
+	and	ax, not('AA' xor 'aa') ;uppercase
+	cmp	al, ah
+	jmp	short $+2	;else LOOPE clears ZF despite AL=AH
+	loope	c		;(only in old QEMU?)
+	mov	al, 0		;<= set breakpoint here to test
+	je	cm
+	dec	al
+cm:	pop	di
+	pop	si
+	mov	cl, 8
+
+nal:	or	bh, bh
 	jns	s2
 	mov	ah, 4Ch		;in check mode, return 0 or FF (not exist)
 	int	21h
